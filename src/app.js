@@ -16,3 +16,12 @@ app.use(express.static("public"));
 
 app.use(cookieParser());
 export { app };
+
+//import routes
+import userRouter from "./routes/user.routes.js";
+
+//control is given to userRouter when /users path is hit by client
+app.use("/api/v1/users", userRouter);
+
+//this how they define path in industry
+//https://localhost:8000/api/v1/users/other methods
