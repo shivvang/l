@@ -29,7 +29,8 @@ const registerUser = asyncHandler(async (req, res) => {
 
   //check whether user already exist or not
   //{} in findone define query
-  const existedUser = User.findOne({ $or: [{ email }, { username }] });
+  //database exist in different contnient there fore await was required
+  const existedUser = await User.findOne({ $or: [{ email }, { username }] });
 
   if (existedUser) {
     throw new ApiError(400, "user with username or email already exist");
@@ -42,7 +43,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
   if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar file is requierd");
+    throw new ApiError(400, "Avatar file path is requierd");
   }
 
   //upload them to cloudinary ,avatar
