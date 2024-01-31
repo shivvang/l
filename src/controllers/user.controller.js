@@ -16,13 +16,13 @@ const registerUser = asyncHandler(async (req, res) => {
   //return res
 
   //parsing data from frotend
-  const { fullName, email, username, password } = req.body;
+  const { fullName, email, userName, password } = req.body;
   console.log("email", email);
 
   //check whether data has value and is not empty
   // for each element in array it checks if they are empty or not if true then error message is logged
   if (
-    [fullName, email, username, password].some((field) => field?.trim() === "")
+    [fullName, email, userName, password].some((field) => field?.trim() === "")
   ) {
     throw new ApiError(400, "All fields are required");
   }
@@ -30,7 +30,7 @@ const registerUser = asyncHandler(async (req, res) => {
   //check whether user already exist or not
   //{} in findone define query
   //database exist in different contnient there fore await was required
-  const existedUser = await User.findOne({ $or: [{ email }, { username }] });
+  const existedUser = await User.findOne({ $or: [{ email }, { userName }] });
 
   if (existedUser) {
     throw new ApiError(400, "user with username or email already exist");
@@ -62,7 +62,7 @@ const registerUser = asyncHandler(async (req, res) => {
     coverImage: coverImage?.url || "",
     email,
     password,
-    username: username.toLowerCase(),
+    userName: userName.toLowerCase(),
   });
   //check whether user created or not
   const createdUser = await User.findById(user._id).select(
