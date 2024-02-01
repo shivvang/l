@@ -4,6 +4,28 @@ import { User } from "../models/users.model.js";
 import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+const generaterAccessAndRefereshToken = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+
+    //method
+    const accessToken = await user.generateAccessToken();
+    const refereshToken = await user.generateRefreshToken();
+
+    //updating user refresh token field with newly generated token
+    user.refereshToken = refereshToken;
+
+    user.save({ validateBeforeSave: false });
+
+    return { accessToken, refereshToken };
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "something went wrong while generating acces and refresh token"
+    );
+  }
+};
+
 const registerUser = asyncHandler(async (req, res) => {
   //register user details from frontend
   //validation not empty
@@ -102,5 +124,42 @@ const loginUser = asyncHandler(async (req, res) => {
 
   //user doesnt exist
   if (!user) throw new ApiError(404, "user does not exist");
+
+  //password validation
+  const passwordValidation = await user.isPasswordCorrect(password);
+
+  //password wrong cheack
+  if (!passwordValidation) throw new ApiError(401, "invalid user credentials");
+
+  //accessa and refresh token
+  const { accessToken, refereshToken } = generaterAccessAndRefereshToken(
+    user._id
+  );
+
+  //here were currently using the unsaved user that is why we find user again
+  const loggedInUser = await User.findById(user._id).includes(
+    "-password -refreshToken"
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refereshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refereshToken,
+        },
+        "user logged in succesfully"
+      )
+    );
 });
 export { registerUser, loginUser };
