@@ -1,8 +1,8 @@
-import dotenv from "dotenv";
+import "../config.js";
 import connectDb from "./db/index.js";
 import { app } from "./app.js";
 //when mentioning path inside the config plz put path with utmost care
-dotenv.config();
+
 connectDb()
   .then(() => {
     app.on("error", (err) => {

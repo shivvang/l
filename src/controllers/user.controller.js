@@ -17,7 +17,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   //parsing data from frotend
   const { fullName, email, userName, password } = req.body;
-  console.log("email", email);
+  //console.log("email", email);
 
   //check whether data has value and is not empty
   // for each element in array it checks if they are empty or not if true then error message is logged
@@ -40,7 +40,15 @@ const registerUser = asyncHandler(async (req, res) => {
   //since multer as middleware is used before calling controller we get to have access to file
 
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  let coverImageLocalPath;
+
+  if (
+    req.files &&
+    Array.isArray(req.files.coverImage) &&
+    req.files.coverImage.length > 0
+  )
+    coverImage = req.files.coverImage[0].path;
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file path is requierd");
@@ -81,4 +89,18 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "User registered successfully"));
 });
 
-export { registerUser };
+const loginUser = asyncHandler(async (req, res) => {
+  //parsing data from fronted
+  const { userName, email, password } = req.body;
+
+  //check for username or email existance
+  if (!userName || !email)
+    throw new ApiError(400, "username or email is required");
+
+  //check for user in database
+  const user = await User.findOne({ $or: [{ userName }, { email }] });
+
+  //user doesnt exist
+  if (!user) throw new ApiError(404, "user does not exist");
+});
+export { registerUser, loginUser };
