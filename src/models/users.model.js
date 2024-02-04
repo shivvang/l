@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import "../../config.js";
 
 const userSchema = new Schema(
   {
@@ -64,10 +65,10 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 };
 
 //methods have access to db data
-userSchema.methods.generateAccessToken = function () {
+userSchema.methods.generateAccessToken = async function () {
   //sign the given payload as json web token
   //this._id gets acces to id from db
-  jwt.sign(
+  return jwt.sign(
     {
       _id: this._id,
       email: this.email,
@@ -81,8 +82,8 @@ userSchema.methods.generateAccessToken = function () {
   );
 };
 //refresh token has light payload
-userSchema.methods.generateRefreshToken = function () {
-  jwt.sign(
+userSchema.methods.generateRefreshToken = async function () {
+  return jwt.sign(
     {
       _id: this._id,
     },

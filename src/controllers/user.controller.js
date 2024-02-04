@@ -10,14 +10,14 @@ const generaterAccessAndRefereshToken = async (userId) => {
 
     //method
     const accessToken = await user.generateAccessToken();
-    const refereshToken = await user.generateRefreshToken();
+    const refreshToken = await user.generateRefreshToken();
 
     //updating user refresh token field with newly generated token
-    user.refereshToken = refereshToken;
+    user.refreshToken = refreshToken;
 
-    user.save({ validateBeforeSave: false });
+    await user.save({ validateBeforeSave: false });
 
-    return { accessToken, refereshToken };
+    return { accessToken, refreshToken };
   } catch (error) {
     throw new ApiError(
       500,
@@ -62,15 +62,15 @@ const registerUser = asyncHandler(async (req, res) => {
   //since multer as middleware is used before calling controller we get to have access to file
 
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  // const coverImageLocalPath = req.files?.coverImage[0]?.path;
-  let coverImageLocalPath;
+  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  // let coverImageLocalPath;
 
-  if (
-    req.files &&
-    Array.isArray(req.files.coverImage) &&
-    req.files.coverImage.length > 0
-  )
-    coverImage = req.files.coverImage[0].path;
+  // if (
+  //   req.files &&
+  //   Array.isArray(req.files.coverImage) &&
+  //   req.files.coverImage.length > 0
+  // )
+  // coverImage = req.files.coverImage[0].path;
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file path is requierd");
@@ -114,9 +114,8 @@ const registerUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
   //parsing data from fronted
   const { userName, email, password } = req.body;
-
   //check for username or email existance
-  if (!userName || !email)
+  if (!(userName || email))
     throw new ApiError(400, "username or email is required");
 
   //check for user in database
@@ -127,17 +126,19 @@ const loginUser = asyncHandler(async (req, res) => {
 
   //password validation
   const passwordValidation = await user.isPasswordCorrect(password);
-
   //password wrong cheack
   if (!passwordValidation) throw new ApiError(401, "invalid user credentials");
 
   //accessa and refresh token
-  const { accessToken, refereshToken } = generaterAccessAndRefereshToken(
+  const { accessToken, refreshToken } = await generaterAccessAndRefereshToken(
     user._id
   );
 
+  console.log("accestoken", accessToken);
+  console.log("refresh token", refreshToken);
+
   //here were currently using the unsaved user that is why we find user again
-  const loggedInUser = await User.findById(user._id).includes(
+  const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
 
@@ -149,14 +150,14 @@ const loginUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refereshToken, options)
+    .cookie("refreshToken", refreshToken, options)
     .json(
       new ApiResponse(
         200,
         {
           user: loggedInUser,
           accessToken,
-          refereshToken,
+          refreshToken,
         },
         "user logged in succesfully"
       )
@@ -168,7 +169,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     req.user._id,
     {
       $set: {
-        refereshToken: undefined,
+        refreshToken: undefined,
       },
     },
     {
