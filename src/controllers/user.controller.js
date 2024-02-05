@@ -134,9 +134,6 @@ const loginUser = asyncHandler(async (req, res) => {
     user._id
   );
 
-  console.log("accestoken", accessToken);
-  console.log("refresh token", refreshToken);
-
   //here were currently using the unsaved user that is why we find user again
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
@@ -165,7 +162,8 @@ const loginUser = asyncHandler(async (req, res) => {
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
-  User.findByIdAndUpdate(
+  //in jwt verify middleware we have same req.user  = user that is why we hvae acceess to req.user
+  await User.findByIdAndUpdate(
     req.user._id,
     {
       $set: {

@@ -6,9 +6,10 @@ import jwt from "jsonwebtoken";
 
 export const verifyJwt = asyncHandler(async (req, _, next) => {
   try {
-    //req.cookie is only posssible due to usage of cookie parser as middleware
+    //note req.cookies not req.cookie
+    //req.cookies is only posssible due to usage of cookie parser as middleware
     const token =
-      req.cookie?.accessToken ||
+      req.cookies?.accessToken ||
       req.header("Authorization")?.replace("Bearer", "");
 
     if (!token) {
@@ -21,12 +22,13 @@ export const verifyJwt = asyncHandler(async (req, _, next) => {
     );
 
     if (!user) {
-      throw new ApiError(401, "Invalid Access Token");
+      throw new ApiError(401, "Invalid Access Token user not found");
     }
 
     req.user = user;
+
     next();
   } catch (error) {
-    throw new ApiError(401, "invalid access token");
+    throw new ApiError(401, "invalid access token failed during verification");
   }
 });
