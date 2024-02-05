@@ -17,6 +17,7 @@ export const verifyJwt = asyncHandler(async (req, _, next) => {
     }
     const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
+    // from decode token we are able to acces user information is because we gave it extra buffer object
     const user = await User.findById(decodedToken?._id).select(
       "-password -refreshToken"
     );

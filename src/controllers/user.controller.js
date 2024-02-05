@@ -3,7 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/users.model.js";
 import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-
+import Jwt from "jsonwebtoken";
 const generaterAccessAndRefereshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -182,8 +182,52 @@ const logoutUser = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .clearCookie("accaccessToken", options)
-    .clearCookie("refereshToken", options)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "user Logged out "));
 });
-export { registerUser, loginUser, logoutUser };
+
+const refreshAccesToken = asyncHandler(async () => {
+  const incomingRefreshToken = req.cookies || req.body.cookies;
+
+  if (!incomingRefreshToken)
+    throw new ApiError(401, "incoming refresh token is not found");
+
+  try {
+    const decodedToken = Jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    const user = await User.findById(decodedToken._id);
+
+    if (!user) throw new ApiError(401, "Invalid refresh token");
+
+    if (incomingRefreshToken !== user.refreshToken) {
+      throw new ApiError(401, "Refresh token is expired or used");
+    }
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    const { accessToken, newRefreshToken } =
+      await generaterAccessAndRefereshToken(user._id);
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", newRefreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, refreshToken: newRefreshToken },
+          "Access token Refreshed"
+        )
+      );
+  } catch (error) {
+    throw new ApiError(401, error.message || "Invalid Refresh token");
+  }
+});
+export { registerUser, loginUser, logoutUser, refreshAccesToken };
